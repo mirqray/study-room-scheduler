@@ -1,5 +1,7 @@
 # Study Room Scheduler
 
+**Live demo:** https://mirqray.pythonanywhere.com/
+
 AI Fundamentals · Final Project · Author: **Moldasheva Zamira** (individual project)
 
 A small web app that helps a student decide **which study room to take and whether to book now or wait**,
@@ -75,9 +77,9 @@ Average reward (higher is better): always book **3.50**, always wait **2.24**, o
 
 ## AI usage declaration
 
-I used Claude (Anthropic) as a helper to plan the project, write and comment the code and tests, and draft the documents.
-I ran the application and the tests myself, checked the numbers by hand, and I can explain every part.
+I used Claude as a helper to plan the project, write and comment the code and tests, and draft the documents.
+I ran the application and the tests myself, checked the numbers by hand.
 
 ## Team contribution
 
-Individual project. All parts (idea, code, tests, report, presentation, demo) were done by Moldasheva Zamira.
+Individual project. All parts were done by Moldasheva Zamira.
