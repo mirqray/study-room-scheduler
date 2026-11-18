@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Room Scheduler</title>
+<style>
+  :root{
+    --ink:#2b2350; --muted:#6b6690; --bg:#f6f4fc; --card:#ffffff; --line:#e0dbf3;
+    --brand:#6c4fd6; --brand-soft:#ece7fb; --good:#1f9d6b; --good-soft:#dff5ea;
+    --warn:#d9822b; --warn-soft:#fdeed9; --bad:#c9364f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+  header{background:linear-gradient(135deg,#4b35a8,#7b5fe0);color:#fff;padding:22px 20px}
+  header h1{margin:0 0 4px;font-size:26px}
+  header p{margin:0;opacity:.92;font-size:15px}
+  main{max-width:1150px;margin:0 auto;padding:18px;display:grid;gap:18px;grid-template-columns:1fr}
+  @media(min-width:920px){main{grid-template-columns:340px 1fr;align-items:start}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card h2{margin:0 0 4px;font-size:18px}
+  .card .simple{margin:0 0 12px;color:var(--muted);font-size:14px}
+  label{display:block;font-size:14px;margin:10px 0 4px;font-weight:bold}
+  .hint{font-weight:normal;color:var(--muted);font-size:13px}
+  .choices{display:flex;gap:8px}
+  .choices label{flex:1;margin:0;font-weight:bold;text-align:center;border:2px solid var(--line);border-radius:10px;padding:10px 6px;cursor:pointer}
+  .choices label{position:relative}
+  .choices input{position:absolute;opacity:0;width:1px;height:1px}
+  .choices label:has(input:focus-visible){outline:3px solid var(--brand);outline-offset:2px}
+  .choices input:checked + span{color:var(--brand)}
+  .choices label:has(input:checked){border-color:var(--brand);background:var(--brand-soft)}
+  .scores{display:grid;grid-template-columns:1fr 70px;gap:6px 10px;align-items:center}
+  .scores span{font-size:14px}
+  input[type=number]{width:100%;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:15px}
+  input[type=range]{width:100%;accent-color:var(--brand)}
+  .row{display:flex;justify-content:space-between;font-size:14px}
+  details{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}
+  summary{cursor:pointer;font-weight:bold;font-size:14px;color:var(--brand)}
+  .check{display:flex;gap:8px;align-items:flex-start;font-weight:normal;margin-top:12px}
+  .check input{margin-top:3px}
+  .buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  button{font:inherit;font-size:14px;border-radius:10px;padding:9px 14px;cursor:pointer;border:1px solid var(--brand);background:#fff;color:var(--brand);font-weight:bold}
+  button.primary{background:var(--brand);color:#fff}
+  button:hover{filter:brightness(.96)}
+  .stack{display:grid;gap:14px}
+  .banner{border-radius:14px;padding:18px 20px;border:2px solid var(--good);background:var(--good-soft)}
+  .banner.wait{border-color:var(--warn);background:var(--warn-soft)}
+  .banner .small{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .banner .big{font-size:26px;font-weight:bold;margin:2px 0}
+  .banner .why{font-size:14px}
+  .stack.stale .banner,.stack.stale .card{opacity:.3}
+  .error{background:#fde8ec;border:1px solid var(--bad);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:14px;display:none}
+  .steptag{display:inline-block;background:var(--brand);color:#fff;border-radius:999px;font-size:12px;padding:2px 10px;margin-right:8px;vertical-align:middle}
+  .bars{display:flex;gap:10px;align-items:flex-end;height:150px;margin:8px 0 6px}
+  .bar{flex:1;text-align:center;font-size:12px}
+  .bar .col{border-radius:8px 8px 0 0;background:#d9d1f5;position:relative;margin-bottom:4px;display:flex;align-items:flex-start;justify-content:center;color:var(--ink);font-weight:bold;font-size:15px;padding-top:3px;min-height:22px}
+  .bar.visited .col{background:#a995ea}
+  .bar.best .col{background:var(--good);color:#fff}
+  .bar .order{display:inline-block;background:var(--ink);color:#fff;border-radius:999px;width:18px;height:18px;line-height:18px;font-size:11px;margin-bottom:3px}
+  .hbar{margin:8px 0}
+  .hbar .lab{display:flex;justify-content:space-between;font-size:14px;margin-bottom:3px}
+  .hbar .track{height:18px;background:#efeaf9;border-radius:9px;overflow:hidden}
+  .hbar .fill{height:100%;background:#a995ea;border-radius:9px;transition:width .3s}
+  .hbar .fill.good{background:var(--good)}
+  .hbar .fill.ours{background:var(--good)}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  .tile{border:2px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center}
+  .tile.win{border-color:var(--good);background:var(--good-soft)}
+  .tile .t{font-size:13px;color:var(--muted)}
+  .tile .v{font-size:26px;font-weight:bold}
+  .formula{background:#f3f0fc;border-radius:8px;padding:8px 10px;font-family:Consolas,monospace;font-size:13px;margin-top:8px;overflow-x:auto}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:6px 0 24px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Study Room Scheduler</h1>
+  <p>Which study room is best, and should you book now or wait? Three AI algorithms work together to decide.</p>
+</header>
+
+<main>
+  <!-- ============ LEFT: the situation ============ -->
+  <section class="card" aria-label="Your situation">
+    <h2>1. Your situation</h2>
+    <p class="simple">Change anything. The answer updates by itself.</p>
+
+    <label>What does the booking system say?</label>
+    <div class="choices">
+      <label><input type="radio" name="report" value="free" checked><span>It says FREE</span></label>
+      <label><input type="radio" name="report" value="busy"><span>It says BUSY</span></label>
+    </div>
+
+    <label>How good is each choice? <span class="hint">(score 0 to 10)</span></label>
+    <div class="scores">
+      {% for name in names %}
+      <span>{{ name }}</span>
+      <input class="score" type="number" step="1" value="{{ scores[loop.index0] }}" aria-label="Score of {{ name }}">
+      {% endfor %}
+    </div>
+
+    <label>How often is a room really free? <span class="hint">(before the report)</span></label>
+    <input id="prior" type="range" min="0" max="100" value="{{ (defaults.prior * 100)|int }}">
+    <div class="row"><span>0%</span><b id="priorLabel"></b><span>100%</span></div>
+
+    <details>
+      <summary>Advanced: how reliable is the system?</summary>
+      <label>System says "free" when the room IS free <span class="hint" id="p1Label"></span></label>
+      <input id="p1" type="range" min="0" max="100" value="{{ (defaults.p_free_if_available * 100)|int }}">
+      <label>System says "free" but the room is TAKEN <span class="hint" id="p2Label"></span></label>
+      <input id="p2" type="range" min="0" max="100" value="{{ (defaults.p_free_if_taken * 100)|int }}">
+    </details>
+
+    <label class="check"><input id="restarts" type="checkbox">
+      <span>Start hill climbing again from every choice <span class="hint">(helps if it gets stuck)</span></span></label>
+
+    <div class="buttons">
+      <button class="primary" id="go">Decide</button>
+      <button id="stuck" title="Scores that make hill climbing stop on a small peak">Example: stuck on a small peak</button>
+      <button id="reset">Reset</button>
+    </div>
+  </section>
+
+  <!-- ============ RIGHT: the answer ============ -->
+  <section class="stack" id="results" aria-live="polite">
+    <div class="error" id="error"></div>
+
+    <div class="banner" id="banner">
+      <div class="small">Final decision</div>
+      <div class="big" id="bannerBig">...</div>
+      <div class="why" id="bannerWhy"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="steptag">Step 1</span>Hill climbing: find the best choice</h2>
+      <p class="simple">Like climbing a hill in the fog: from one choice, step to the better neighbour until no neighbour is better.</p>
+      <div class="bars" id="bars"></div>
+      <div id="pathText" style="font-size:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="steptag">Step 2</span>Bayes' theorem: can we believe the system?</h2>
+      <p class="simple">The report is not perfect. Bayes tells us how sure we can be that the room is really free.</p>
+      <div class="hbar"><div class="lab"><span>Before the report</span><b id="priorText"></b></div>
+        <div class="track"><div class="fill" id="priorFill"></div></div></div>
+      <div class="hbar"><div class="lab"><span id="postLab">After the report</span><b id="postText"></b></div>
+        <div class="track"><div class="fill good" id="postFill"></div></div></div>
+      <div class="formula" id="bayesFormula"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="steptag">Step 3</span>MDP: book now or wait?</h2>
+      <p class="simple">We count the points we expect from each action and choose the bigger number.</p>
+      <div class="tiles">
+        <div class="tile" id="tileBook"><div class="t">Book now</div><div class="v" id="vBook"></div></div>
+        <div class="tile" id="tileWait"><div class="t">Wait</div><div class="v" id="vWait"></div></div>
+      </div>
+      <div class="formula" id="mdpFormula"></div>
+    </div>
+
+    <div class="card">
+      <h2>Is our method better?</h2>
+      <p class="simple">Average points over many students (higher is better).</p>
+      <div id="evalBars"></div>
+    </div>
+  </section>
+</main>
+<footer>AI Fundamentals · Final Project · Moldasheva Zamira · all numbers are example assumptions</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEFAULTS = {
+  scores: {{ scores|tojson }},
+  prior: {{ (defaults.prior * 100)|int }},
+  p1: {{ (defaults.p_free_if_available * 100)|int }},
+  p2: {{ (defaults.p_free_if_taken * 100)|int }}
+};
+const fmt = x => (Math.round(x * 1000) / 1000).toString();
+const neg = x => x < 0 ? "(" + fmt(x) + ")" : fmt(x);   // minus numbers in brackets inside formulas
+const two = x => x.toFixed(2);
+const pct = x => (Math.round(x * 1000) / 10) + "%";
+
+function sliderLabels(){
+  $("priorLabel").textContent = $("prior").value + "%";
+  $("p1Label").textContent = "(" + $("p1").value + "%)";
+  $("p2Label").textContent = "(" + $("p2").value + "%)";
+}
+
+function readInputs(){
+  return {
+    report: document.querySelector("input[name=report]:checked").value,
+    scores: [...document.querySelectorAll(".score")].map(i => i.value === "" ? "" : Number(i.value)),
+    prior: $("prior").value / 100,
+    p_free_if_available: $("p1").value / 100,
+    p_free_if_taken: $("p2").value / 100,
+    restarts: $("restarts").checked
+  };
+}
+
+function hbar(label, value, cls, max, text){
+  const w = max > 0 ? Math.max(0, value) / max * 100 : 0;
+  return '<div class="hbar"><div class="lab"><span>' + label + '</span><b>' + (text || fmt(value)) +
+         '</b></div><div class="track"><div class="fill ' + cls + '" style="width:' + w + '%"></div></div></div>';
+}
+
+function render(d){
+  $("error").style.display = "none";
+  $("results").classList.remove("stale");
+  const wait = d.action === "Wait";
+  $("banner").className = "banner" + (wait ? " wait" : "");
+  $("bannerBig").textContent = wait ? "Wait and check again later" : "Book " + d.best_name + " now";
+  $("bannerWhy").textContent = "Expected points: Book now = " + fmt(d.mdp.book) + ", Wait = " + fmt(d.mdp.wait) +
+    ". The bigger number wins.";
+
+  // step 1
+  const maxScore = Math.max(...d.scores, 1);
+  $("bars").innerHTML = d.scores.map((s, i) => {
+    const order = d.path.indexOf(i);
+    const cls = (i === d.best_index ? " best" : "") + (order >= 0 ? " visited" : "");
+    const h = Math.max(22, Math.max(s, 0) / maxScore * 100);
+    const badge = order >= 0 ? '<span class="order">' + (order + 1) + '</span><br>' : '<span style="display:block;height:21px"></span>';
+    return '<div class="bar' + cls + '">' + badge + '<div class="col" style="height:' + h + 'px">' + s + '</div>' +
+           d.names[i].replace(", ", "<br>") + '</div>';
+  }).join("");
+  $("pathText").textContent = "Path: " + d.path.map(i => d.scores[i]).join(" → ") +
+    ". Best choice: " + d.best_name + " (score " + d.best_score + ")." +
+    (d.restarts ? " (started again from every choice)" : "");
+
+  // step 2
+  $("priorText").textContent = pct(d.prior);
+  $("priorFill").style.width = d.prior * 100 + "%";
+  $("postLab").textContent = "After the report \"" + d.report + "\"";
+  $("postText").textContent = pct(d.p_available);
+  $("postFill").style.width = d.p_available * 100 + "%";
+  const s = d.settings;
+  const like = d.report === "free" ? [s.p_free_if_available, s.p_free_if_taken]
+                                   : [1 - s.p_free_if_available, 1 - s.p_free_if_taken];
+  $("bayesFormula").textContent = "P(report) = " + fmt(like[0]) + "×" + fmt(s.prior) + " + " + fmt(like[1]) + "×" + fmt(1 - s.prior) +
+    " = " + fmt(d.p_report) + "   →   P(free | report) = " + fmt(like[0]) + "×" + fmt(s.prior) + " / " + fmt(d.p_report) +
+    " = " + fmt(d.p_available);
+
+  // step 3
+  $("vBook").textContent = fmt(d.mdp.book);
+  $("vWait").textContent = fmt(d.mdp.wait);
+  $("tileBook").className = "tile" + (wait ? "" : " win");
+  $("tileWait").className = "tile" + (wait ? " win" : "");
+  $("mdpFormula").textContent = "Book now = " + fmt(d.p_available) + "×" + neg(d.mdp.book_if_free) + " + " + fmt(1 - d.p_available) + "×" +
+    neg(d.mdp.book_if_taken) + " = " + fmt(d.mdp.book) + "   |   Wait = " + fmt(d.p_available) + "×" + neg(d.mdp.wait_if_free) +
+    " + " + fmt(1 - d.p_available) + "×" + neg(d.mdp.wait_if_taken) + " = " + fmt(d.mdp.wait);
+
+  // evaluation
+  const e = d.evaluation, max = Math.max(e.always_book, e.always_wait, e.ours);
+  $("evalBars").innerHTML = hbar("Always book now", e.always_book, "", max, two(e.always_book)) + hbar("Always wait", e.always_wait, "", max, two(e.always_wait)) +
+    hbar("Our method (Bayes + MDP)", e.ours, "ours", max, two(e.ours));
+}
+
+function showError(message){
+  $("results").classList.add("stale");   // old results no longer match the inputs
+  $("error").textContent = "Please check your input: " + message;
+  $("error").style.display = "block";
+}
+
+async function decide(){
+  try {
+    const response = await fetch("/api/decide", {method: "POST", headers: {"Content-Type": "application/json"},
+                                                 body: JSON.stringify(readInputs())});
+    const data = await response.json();
+    if (!response.ok) { showError(data.error || "unknown error"); return; }
+    render(data);
+  } catch (err) {
+    showError("the server is not running. Start it with: python app.py");
+  }
+}
+
+let timer = null;
+function later(){ sliderLabels(); clearTimeout(timer); timer = setTimeout(decide, 150); }
+
+function setScores(values){ document.querySelectorAll(".score").forEach((el, i) => el.value = values[i]); }
+
+document.querySelectorAll("input").forEach(el => el.addEventListener("input", later));
+$("go").addEventListener("click", decide);
+$("stuck").addEventListener("click", () => { setScores([2, 5, 3, 7, 6]); $("restarts").checked = false; later(); });
+$("reset").addEventListener("click", () => {
+  setScores(DEFAULTS.scores); $("prior").value = DEFAULTS.prior; $("p1").value = DEFAULTS.p1; $("p2").value = DEFAULTS.p2;
+  $("restarts").checked = false; document.querySelector("input[name=report][value=free]").checked = true; later();
+});
+sliderLabels();
+decide();
+</script>
+</body>
+</html>
